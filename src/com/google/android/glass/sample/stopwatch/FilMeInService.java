@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.PendingIntent;
@@ -58,6 +60,10 @@ public class FilMeInService extends Service {
     private Timer heartBeat = null;
     private int i = 0;
     
+    private JSONObject jsonObj;
+    private boolean isFirstTime = true;
+    private long previousEnd = 0;
+    
     public class LocalBinder extends Binder {
         public FilMeInService getService() {
             return FilMeInService.this;
@@ -82,7 +88,19 @@ public class FilMeInService extends Service {
          
          Log.d("speech + n", voiceResults.toString());
          
-         new ASyncGetData().execute(voiceResults.toArray(new String[voiceResults.size()]));
+        // new ASyncGetData().execute(voiceResults.toArray(new String[voiceResults.size()]));
+         try {
+			jsonObj = new JSONObject("{name:\"Test Movie\",subtitles:[{count:1,start:7000,endTime:6000,text:\"This is an example of a subtitle\"},{count:1,start:6500,endTime:8000,text:\"What did you say you bastard?\"}]}");
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+         try {
+			Log.d("jsonobj", jsonObj.getString("name"));
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
         onServiceStart();
         return START_STICKY;
     }
@@ -158,7 +176,8 @@ public class FilMeInService extends Service {
         if(heartBeat == null) {
             heartBeat = new Timer();
         }
-        startHeartBeat(3000);
+        updateCard(FilMeInService.this);
+        setHeartBeat();
 
         return true;
     }
@@ -244,10 +263,16 @@ public class FilMeInService extends Service {
 //            liveCard = tm.createLiveCard(cardId);
 //            liveCard.setNonSilent(true);       // Bring it to front.
             // TBD: The reference to remoteViews can be kept in this service as well....
+        	String content = "kkkk";
+        	try {
+        		JSONArray subtitles = jsonObj.getJSONArray(("subtitles"));
+                JSONObject j = subtitles.getJSONObject(i);
+                content = j.getString("text");
+        	} catch(Exception e) {
+        		Log.e("err", e.toString());
+        	}
             RemoteViews remoteViews = new RemoteViews(context.getPackageName(), R.layout.card_chronometer);
-            String content = "kkkk";
             
-            content = "Updated: " + i;
             // ...
 
             remoteViews.setTextViewText(R.id.subtitle_target, content);
@@ -265,8 +290,10 @@ public class FilMeInService extends Service {
     }
 
 
-    private void startHeartBeat(int nextSubTime)
+    private void setHeartBeat()
     {
+    	
+    	
         final Handler handler = new Handler();
         TimerTask liveCardUpdateTask = new TimerTask() {
             @Override
@@ -275,8 +302,15 @@ public class FilMeInService extends Service {
                     public void run() {
                         try {
                         	Log.e("timer updated", "timer updated");
-                        	updateText();
+                        	
+                        	
+                            updateText();
                             updateCard(FilMeInService.this);
+                            if(i < 2)
+                            {
+                            	setHeartBeat();
+                            }
+                            
                         } catch (Exception e) {
                             Log.e("Failed to run the task.", "Failed to run the task." + e);
                         }
@@ -286,7 +320,25 @@ public class FilMeInService extends Service {
                 });
             }
         };
-        heartBeat.scheduleAtFixedRate(liveCardUpdateTask, 0,nextSubTime);
+        try {
+        	JSONArray subtitles = jsonObj.getJSONArray(("subtitles"));
+            JSONObject j = subtitles.getJSONObject(i);
+            long start = j.getLong("start");
+            long endTime = j.getLong("endTime");
+            if(isFirstTime) {
+            	heartBeat.schedule(liveCardUpdateTask, 0, endTime - start);
+            	isFirstTime = false;
+            } else {
+            	heartBeat.schedule(liveCardUpdateTask, start-previousEnd, endTime - start);
+            	previousEnd = endTime;
+            }
+            
+            
+        } catch (Exception e)
+        {
+        	Log.e("error", e.toString());
+        }
+        
     }
 
     private void updateText() {
