@@ -1,0 +1,47 @@
+html
+	head
+		title Hello lads
+	body
+		form(name="details", action="/api/putFilm", method="post")
+			label Name:  
+			input(type="text", style="width:300", name="filmName")
+			br
+			label IMDB ID:  
+			input(type="text", style="width:300", name="imdb_id")
+			br
+			h3 Info:  
+			label Rating:  
+			input(type="text", style="width:300", name="rating")
+			br
+			label Year:  
+			input(type="text", style="width:300", name="year")
+			br
+			label Cast1:  
+			input(type="text", style="width:300", name="cast1")
+			br
+			label Cast2:  
+			input(type="text", style="width:300", name="cast2")
+			br
+			label Cast3:  
+			input(type="text", style="width:300", name="cast3")
+			br
+			br
+			label Picture URL:  
+			input(type="text", style="width:500", name="pic_url")
+			h3 Trivia:
+			label Genre:  
+			input(type="text", style="width:300", name="genre")
+			br
+			label Time:  
+			input(type="text", style="width:300", name="time")
+			br
+			label Description:  
+			textarea(rows='4', cols='50', name="desc")
+			br
+			br
+			label Subtitles:  
+			textarea(rows='15', cols='50', name="subtitles")
+			br
+			br
+			br
+			input(type="submit", value="Go for it Tom!")
