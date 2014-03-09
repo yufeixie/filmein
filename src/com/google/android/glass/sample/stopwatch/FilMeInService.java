@@ -45,7 +45,7 @@ import com.google.android.glass.timeline.TimelineManager;
 /**
  * Service owning the LiveCard living in the timeline.
  */
-public class FilMeInService extends Service {
+public class FilMeInService extends Service implements AsyncResponse {
 
     private static final String TAG = "StopwatchService";
     private static final String LIVE_CARD_TAG = "stopwatch";
@@ -87,7 +87,16 @@ public class FilMeInService extends Service {
         return START_STICKY;
     }
     
+    //Result of ASyncTask, this is called when it's finished
+    @Override
+	public void processFinish(JSONObject output) {
+		// TODO Auto-generated method stub
+		
+	}
+    
     private class ASyncGetData extends AsyncTask<String, Void, JSONObject> {
+    	
+    	public AsyncResponse delegate = null;
 
 		@Override
 		protected JSONObject doInBackground(String... params) {
@@ -131,6 +140,11 @@ public class FilMeInService extends Service {
 			return null;
 			
 		}
+		
+		@Override
+		   protected void onPostExecute(JSONObject result) {
+		      delegate.processFinish(result);
+		   }
     	
     }
     
