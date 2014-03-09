@@ -75,7 +75,7 @@ public class FilMeInActivity extends Activity
 
         // bind does not work. We need to call start() explilicitly...
         // doBindService();
-        doStartService();
+        //doStartService();
         // TBD: We need to call doStopService() when user "closes" the app....
         // ...
 
@@ -128,7 +128,7 @@ public class FilMeInActivity extends Activity
     private void handleGestureTap()
     {
         Log.d("handleGestureTap() called.", "handleGestureTap() called.");
-        doStopService();
+        doStartService();
         finish();
     }
 

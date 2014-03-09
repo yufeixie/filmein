@@ -42,12 +42,15 @@ import android.widget.RemoteViews;
 
 import com.google.android.glass.timeline.LiveCard;
 import com.google.android.glass.timeline.TimelineManager;
+import com.google.android.glass.touchpad.Gesture;
+import com.google.android.glass.touchpad.GestureDetector;
+import com.google.android.glass.touchpad.GestureDetector.BaseListener;
 
 
 /**
  * Service owning the LiveCard living in the timeline.
  */
-public class FilMeInService extends Service implements AsyncResponse {
+public class FilMeInService extends Service implements AsyncResponse, BaseListener {
 
     private static final String TAG = "StopwatchService";
     private static final String LIVE_CARD_TAG = "stopwatch";
@@ -56,6 +59,8 @@ public class FilMeInService extends Service implements AsyncResponse {
 
     private TimelineManager mTimelineManager;
     private LiveCard liveCard;
+    
+    private GestureDetector gc;
 
     private Timer heartBeat = null;
     private int i = 0;
@@ -85,9 +90,17 @@ public class FilMeInService extends Service implements AsyncResponse {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
     	 ArrayList<String> voiceResults = intent.getExtras().getStringArrayList(RecognizerIntent.EXTRA_RESULTS);
-         
+    	 publishCard(this);
          Log.d("speech + n", voiceResults.toString());
-         publishCard(this);
+         gc = new GestureDetector(this);
+         
+         gc.setBaseListener( new GestureDetector.BaseListener() {
+        	@Override
+        	public boolean onGesture(Gesture gesture) {
+        		handleGesture(gesture);
+				return true;
+        	}
+         });
          new ASyncGetData(this).execute(voiceResults.toArray(new String[voiceResults.size()]));
 //         try {
 //			//jsonObj = new JSONObject("{name:\"Test Movie\",subtitles:[{count:1,start:4000,endTime:6000,text:\"This is an example of a subtitle\"},{count:2,start:8000,endTime:12000,text:\"your momma!\"}, {count:3,start:15000,endTime:17000,text:\"What did you say you bastard?\"},{count:4,start:18000,endTime:19000,text:\"I said your momma!\"}]}");
@@ -105,6 +118,10 @@ public class FilMeInService extends Service implements AsyncResponse {
         return START_STICKY;
     }
     
+    private void handleGesture(Gesture g){
+    	Log.d("gesture","test");
+    }
+    
     //Result of ASyncTask, this is called when it's finished
     @Override
 	public void processFinish(JSONObject output) {
@@ -114,6 +131,8 @@ public class FilMeInService extends Service implements AsyncResponse {
     		Log.d("iii", "errrrrrr");
     	}
 		jsonObj = output;
+		publishCard(this);
+		//pausedCard(this);
 		onServiceStart();
 	}
     
@@ -132,6 +151,7 @@ public class FilMeInService extends Service implements AsyncResponse {
 				for (String s : params) {
 					movie += s.replace(" ", "%20");
 				}
+				//movie = "duck";
 				String url = "http://acompany.herokuapp.com/api/getFilm/" + movie;
 				 
 				URL obj = new URL(url);
@@ -250,7 +270,7 @@ public class FilMeInService extends Service implements AsyncResponse {
 
     private void publishCard(Context context)
     {
-        Log.d("publishCard() called.", "publishCard() called.");
+        //Log.d("publishCard() called.", "publishCard() called.");
         // if (liveCard == null || !liveCard.isPublished()) {
         if (liveCard == null) {
             TimelineManager tm = TimelineManager.from(context);
@@ -258,6 +278,7 @@ public class FilMeInService extends Service implements AsyncResponse {
 //             // liveCard.setNonSilent(false);       // Initially keep it silent ???
 //             liveCard.setNonSilent(true);      // for testing, it's more convenient. Bring the card to front.
             RemoteViews remoteViews = new RemoteViews(context.getPackageName(), R.layout.card_chronometer);
+            remoteViews.setTextViewText(R.id.subtitle_target, "");
             liveCard.setViews(remoteViews);
             Intent intent = new Intent(context, FilMeInActivity.class);
             liveCard.setAction(PendingIntent.getActivity(context, 0, intent, 0));
@@ -267,13 +288,21 @@ public class FilMeInService extends Service implements AsyncResponse {
             return;
         }
     }
+    
+    private void pausedCard(Context context) {
+    	RemoteViews remoteViews = new RemoteViews(context.getPackageName(), R.layout.card_chronometer);
+        
+        remoteViews.setTextViewText(R.id.subtitle_target, "this is a dummy");
+        liveCard.setViews(remoteViews);
+    }
+    
     // This will be called by the "HeartBeat".
     private void updateCard(Context context)
     {
         Log.d("updateCard() called.", "updateCard() called.");
         // if (liveCard == null || !liveCard.isPublished()) {
         if (liveCard == null) {
-        	Log.d("publish card when livecard is null", "publish card when livecard is null");
+        	//Log.d("publish card when livecard is null", "publish card when livecard is null");
             // Use the default content.
             publishCard(context);
         } else {
@@ -337,7 +366,7 @@ public class FilMeInService extends Service implements AsyncResponse {
                 handler.post(new Runnable() {
                     public void run() {
                         try {
-                        	Log.e("timer updated", "timer updated");
+                        	//Log.e("timer updated", "timer updated");
                             
                             setHeartBeat();
                             updateCard(FilMeInService.this);
@@ -369,13 +398,13 @@ public class FilMeInService extends Service implements AsyncResponse {
             	}
             	else {
             		isBlank = true;
-                	Log.d("not blank", "" + (start - previousEnd));
+                	//Log.d("not blank", "" + (start - previousEnd));
                 	heartBeat.schedule(liveCardUpdateTask, start - previousEnd);
                 	previousEnd = endTime;
             	}
             }
             else {
-            	Log.d("isBlank","" + (endTime - start));
+            	//Log.d("isBlank","" + (endTime - start));
             	heartBeat.schedule(liveCardUpdateTask, endTime - start);
             	previousEnd = endTime;
             	isBlank = false;
@@ -390,5 +419,15 @@ public class FilMeInService extends Service implements AsyncResponse {
     private void updateText() {
     	Log.d("d", "" + i);
     	i++;
+	}
+
+	@Override
+	public boolean onGesture(Gesture arg0) {
+		Log.d("gest","ure");
+		if(arg0.equals(Gesture.TAP)) {
+			//Log.d("tap", "something");
+			onServiceStart();
+		}
+		return true;
 	}
 }
