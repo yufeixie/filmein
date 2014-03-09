@@ -118,21 +118,26 @@ public class FilMeInService extends Service implements AsyncResponse {
 				int responseCode = con.getResponseCode();
 				System.out.println("\nSending 'GET' request to URL : " + url);
 				System.out.println("Response Code : " + responseCode);
+				
+				if (responseCode == 200) {
 		 
-				BufferedReader in = new BufferedReader(
-				        new InputStreamReader(con.getInputStream()));
-				String inputLine;
-				StringBuffer response = new StringBuffer();
-		 
-				while ((inputLine = in.readLine()) != null) {
-					response.append(inputLine);
+					BufferedReader in = new BufferedReader(
+					        new InputStreamReader(con.getInputStream()));
+					String inputLine;
+					StringBuffer response = new StringBuffer();
+			 
+					while ((inputLine = in.readLine()) != null) {
+						response.append(inputLine);
+					}
+					in.close();
+			 
+					//print result
+					Log.d("movie", response.toString());
+					JSONObject jsonObj = new JSONObject(response.toString());
+					return jsonObj;
+				} else {
+					return null;
 				}
-				in.close();
-		 
-				//print result
-				Log.d("movie", response.toString());
-				JSONObject jsonObj = new JSONObject(response.toString());
-				return jsonObj;
 		 
 			} catch (Exception e) {
 				e.printStackTrace();
