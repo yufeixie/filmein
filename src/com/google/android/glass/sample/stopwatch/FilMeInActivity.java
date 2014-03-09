@@ -128,8 +128,9 @@ public class FilMeInActivity extends Activity
     private void handleGestureTap()
     {
         Log.d("handleGestureTap() called.", "handleGestureTap() called.");
-        doStartService();
-        finish();
+        //doStartService();
+        subtitleCardService.start();
+     //finish();
     }
 
     private void handleGestureTwoTap()
