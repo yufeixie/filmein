@@ -7,6 +7,6 @@ Team Members
 ----
 * George 'thetmkay' Nishimura
 * Miten 'mitdog' Mistry
-* Niket 'niketin' Shah
+* Niket 'nikatin' Shah
 * Thomas 'thesteak' Przepiorka
 * Yufei 'squiwardthecow' Xie
