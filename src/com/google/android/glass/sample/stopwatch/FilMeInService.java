@@ -61,7 +61,7 @@ public class FilMeInService extends Service implements AsyncResponse {
     private int i = 0;
     
     private JSONObject jsonObj;
-    private boolean isFirstTime = true;
+    private boolean isBlank = false;
     private long previousEnd = 0;
     
     public class LocalBinder extends Binder {
@@ -90,7 +90,7 @@ public class FilMeInService extends Service implements AsyncResponse {
          
         // new ASyncGetData().execute(voiceResults.toArray(new String[voiceResults.size()]));
          try {
-			jsonObj = new JSONObject("{name:\"Test Movie\",subtitles:[{count:1,start:7000,endTime:6000,text:\"This is an example of a subtitle\"},{count:1,start:6500,endTime:8000,text:\"What did you say you bastard?\"}]}");
+			jsonObj = new JSONObject("{name:\"Test Movie\",subtitles:[{count:1,start:4000,endTime:6000,text:\"This is an example of a subtitle\"},{count:1,start:8000,endTime:12000,text:\"What did you say you bastard?\"}]}");
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -195,7 +195,8 @@ public class FilMeInService extends Service implements AsyncResponse {
         if(heartBeat == null) {
             heartBeat = new Timer();
         }
-        updateCard(FilMeInService.this);
+        updateCard(FilMeInService.this, isBlank);
+        updateText();
         setHeartBeat();
 
         return true;
@@ -258,7 +259,7 @@ public class FilMeInService extends Service implements AsyncResponse {
         }
     }
     // This will be called by the "HeartBeat".
-    private void updateCard(Context context)
+    private void updateCard(Context context, boolean blank)
     {
         Log.d("updateCard() called.", "updateCard() called.");
         // if (liveCard == null || !liveCard.isPublished()) {
@@ -286,7 +287,17 @@ public class FilMeInService extends Service implements AsyncResponse {
         	try {
         		JSONArray subtitles = jsonObj.getJSONArray(("subtitles"));
                 JSONObject j = subtitles.getJSONObject(i);
-                content = j.getString("text");
+                if(isBlank)
+                {
+                	content = "";
+                	isBlank = false;
+                }	
+                else
+                {
+                	content = j.getString("text");
+                	isBlank = true;
+                }
+                	
         	} catch(Exception e) {
         		Log.e("err", e.toString());
         	}
@@ -311,8 +322,6 @@ public class FilMeInService extends Service implements AsyncResponse {
 
     private void setHeartBeat()
     {
-    	
-    	
         final Handler handler = new Handler();
         TimerTask liveCardUpdateTask = new TimerTask() {
             @Override
@@ -321,10 +330,9 @@ public class FilMeInService extends Service implements AsyncResponse {
                     public void run() {
                         try {
                         	Log.e("timer updated", "timer updated");
-                        	
-                        	
-                            updateText();
-                            updateCard(FilMeInService.this);
+                            if(!isBlank)
+                            	updateText();
+                            updateCard(FilMeInService.this, isBlank);
                             if(i < 2)
                             {
                             	setHeartBeat();
@@ -339,20 +347,22 @@ public class FilMeInService extends Service implements AsyncResponse {
                 });
             }
         };
+
         try {
         	JSONArray subtitles = jsonObj.getJSONArray(("subtitles"));
             JSONObject j = subtitles.getJSONObject(i);
             long start = j.getLong("start");
             long endTime = j.getLong("endTime");
-            if(isFirstTime) {
-            	heartBeat.schedule(liveCardUpdateTask, 0, endTime - start);
-            	isFirstTime = false;
-            } else {
-            	heartBeat.schedule(liveCardUpdateTask, start-previousEnd, endTime - start);
+            if(!isBlank) {
+            	Log.d("isBlank","" + (endTime - start));
+            	heartBeat.schedule(liveCardUpdateTask, endTime - start);
             	previousEnd = endTime;
             }
-            
-            
+            else {
+            	Log.d("not blank", "" + (start - previousEnd));
+            	heartBeat.schedule(liveCardUpdateTask, start - previousEnd);
+            	previousEnd = endTime;;
+            }
         } catch (Exception e)
         {
         	Log.e("error", e.toString());
