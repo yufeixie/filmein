@@ -62,7 +62,7 @@ public class FilMeInService extends Service implements AsyncResponse {
     
     private JSONObject jsonObj;
     private boolean isBlank = false;
-    private long previousEnd = 0;
+    private long previousEnd = -1;
     
     public class LocalBinder extends Binder {
         public FilMeInService getService() {
@@ -87,21 +87,21 @@ public class FilMeInService extends Service implements AsyncResponse {
     	 ArrayList<String> voiceResults = intent.getExtras().getStringArrayList(RecognizerIntent.EXTRA_RESULTS);
          
          Log.d("speech + n", voiceResults.toString());
-         
-        // new ASyncGetData().execute(voiceResults.toArray(new String[voiceResults.size()]));
-         try {
-			jsonObj = new JSONObject("{name:\"Test Movie\",subtitles:[{count:1,start:4000,endTime:6000,text:\"This is an example of a subtitle\"},{count:1,start:8000,endTime:12000,text:\"What did you say you bastard?\"}]}");
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-         try {
-			Log.d("jsonobj", jsonObj.getString("name"));
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        onServiceStart();
+         publishCard(this);
+         new ASyncGetData(this).execute(voiceResults.toArray(new String[voiceResults.size()]));
+//         try {
+//			//jsonObj = new JSONObject("{name:\"Test Movie\",subtitles:[{count:1,start:4000,endTime:6000,text:\"This is an example of a subtitle\"},{count:2,start:8000,endTime:12000,text:\"your momma!\"}, {count:3,start:15000,endTime:17000,text:\"What did you say you bastard?\"},{count:4,start:18000,endTime:19000,text:\"I said your momma!\"}]}");
+//		} catch (JSONException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//         try {
+//			Log.d("jsonobj", jsonObj.getString("name"));
+//		} catch (JSONException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+        
         return START_STICKY;
     }
     
@@ -109,12 +109,21 @@ public class FilMeInService extends Service implements AsyncResponse {
     @Override
 	public void processFinish(JSONObject output) {
 		// TODO Auto-generated method stub
-		
+    	if(output == null)
+    	{
+    		Log.d("iii", "errrrrrr");
+    	}
+		jsonObj = output;
+		onServiceStart();
 	}
     
-    private class ASyncGetData extends AsyncTask<String, Void, JSONObject> {
+    private class ASyncGetData extends AsyncTask<String, AsyncResponse, JSONObject> {
     	
     	public AsyncResponse delegate = null;
+    	
+    	public ASyncGetData(AsyncResponse delegate) {
+    		this.delegate = delegate;
+    	}
 
 		@Override
 		protected JSONObject doInBackground(String... params) {
@@ -191,12 +200,11 @@ public class FilMeInService extends Service implements AsyncResponse {
     private boolean onServiceStart()
     {
         Log.d("onServiceStart() called.", "onServiceStart() called.");
-        publishCard(this);
+        
         if(heartBeat == null) {
             heartBeat = new Timer();
         }
         updateCard(FilMeInService.this, isBlank);
-        updateText();
         setHeartBeat();
 
         return true;
@@ -294,7 +302,10 @@ public class FilMeInService extends Service implements AsyncResponse {
                 }	
                 else
                 {
+                	if(previousEnd < 0)
+                		previousEnd = j.getLong("endTime");
                 	content = j.getString("text");
+                	updateText();
                 	isBlank = true;
                 }
                 	
@@ -330,10 +341,8 @@ public class FilMeInService extends Service implements AsyncResponse {
                     public void run() {
                         try {
                         	Log.e("timer updated", "timer updated");
-                            if(!isBlank)
-                            	updateText();
                             updateCard(FilMeInService.this, isBlank);
-                            if(i < 2)
+                            if(i < 4)
                             {
                             	setHeartBeat();
                             }
@@ -371,6 +380,7 @@ public class FilMeInService extends Service implements AsyncResponse {
     }
 
     private void updateText() {
+    	Log.d("d", "" + i);
     	i++;
 	}
 }
