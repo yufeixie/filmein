@@ -61,7 +61,7 @@ public class FilMeInService extends Service implements AsyncResponse {
     private int i = 0;
     
     private JSONObject jsonObj;
-    private boolean isBlank = false;
+    private boolean isBlank = true;
     private long previousEnd = -1;
     
     public class LocalBinder extends Binder {
@@ -204,8 +204,9 @@ public class FilMeInService extends Service implements AsyncResponse {
         if(heartBeat == null) {
             heartBeat = new Timer();
         }
-        updateCard(FilMeInService.this, isBlank);
         setHeartBeat();
+        updateCard(FilMeInService.this);
+        
 
         return true;
     }
@@ -267,7 +268,7 @@ public class FilMeInService extends Service implements AsyncResponse {
         }
     }
     // This will be called by the "HeartBeat".
-    private void updateCard(Context context, boolean blank)
+    private void updateCard(Context context)
     {
         Log.d("updateCard() called.", "updateCard() called.");
         // if (liveCard == null || !liveCard.isPublished()) {
@@ -298,15 +299,11 @@ public class FilMeInService extends Service implements AsyncResponse {
                 if(isBlank)
                 {
                 	content = "";
-                	isBlank = false;
                 }	
                 else
                 {
-                	if(previousEnd < 0)
-                		previousEnd = j.getLong("endTime");
                 	content = j.getString("text");
                 	updateText();
-                	isBlank = true;
                 }
                 	
         	} catch(Exception e) {
@@ -341,11 +338,9 @@ public class FilMeInService extends Service implements AsyncResponse {
                     public void run() {
                         try {
                         	Log.e("timer updated", "timer updated");
-                            updateCard(FilMeInService.this, isBlank);
-                            if(i < 4)
-                            {
-                            	setHeartBeat();
-                            }
+                            
+                            setHeartBeat();
+                            updateCard(FilMeInService.this);
                             
                         } catch (Exception e) {
                             Log.e("Failed to run the task.", "Failed to run the task." + e);
@@ -359,18 +354,31 @@ public class FilMeInService extends Service implements AsyncResponse {
 
         try {
         	JSONArray subtitles = jsonObj.getJSONArray(("subtitles"));
+        	if(i >= subtitles.length())
+        	{
+        		onServiceStop();
+        	}
             JSONObject j = subtitles.getJSONObject(i);
             long start = j.getLong("start");
             long endTime = j.getLong("endTime");
-            if(!isBlank) {
+            if(!isBlank)
+            {
+            	if(start - previousEnd < 10) {
+            		heartBeat.schedule(liveCardUpdateTask, endTime - start);
+            		previousEnd = endTime;
+            	}
+            	else {
+            		isBlank = true;
+                	Log.d("not blank", "" + (start - previousEnd));
+                	heartBeat.schedule(liveCardUpdateTask, start - previousEnd);
+                	previousEnd = endTime;
+            	}
+            }
+            else {
             	Log.d("isBlank","" + (endTime - start));
             	heartBeat.schedule(liveCardUpdateTask, endTime - start);
             	previousEnd = endTime;
-            }
-            else {
-            	Log.d("not blank", "" + (start - previousEnd));
-            	heartBeat.schedule(liveCardUpdateTask, start - previousEnd);
-            	previousEnd = endTime;;
+            	isBlank = false;
             }
         } catch (Exception e)
         {
