@@ -38,6 +38,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.speech.RecognizerIntent;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.widget.RemoteViews;
 
 import com.google.android.glass.timeline.LiveCard;
@@ -252,8 +253,7 @@ public class FilMeInService extends Service implements AsyncResponse{
         return true;
     }
 
-
-
+    
 
     // For live cards...
 
@@ -268,6 +268,7 @@ public class FilMeInService extends Service implements AsyncResponse{
 //             liveCard.setNonSilent(true);      // for testing, it's more convenient. Bring the card to front.
             RemoteViews remoteViews = new RemoteViews(context.getPackageName(), R.layout.card_chronometer);
             remoteViews.setTextViewText(R.id.subtitle_target, "");
+            
             liveCard.setViews(remoteViews);
             Intent intent = new Intent(context, FilMeInActivity.class);
             liveCard.setAction(PendingIntent.getActivity(context, 0, intent, 0));

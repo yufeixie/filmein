@@ -8,6 +8,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import com.google.android.glass.touchpad.Gesture;
@@ -131,6 +132,19 @@ public class FilMeInActivity extends Activity
         //doStartService();
         subtitleCardService.start();
      //finish();
+    }
+    
+    @Override
+    public boolean onKeyDown(int keycode, KeyEvent event) {
+		if(keycode == KeyEvent.KEYCODE_DPAD_CENTER)
+		{
+			Log.e("faalla", "alalaaaaaaa");
+			subtitleCardService.start();
+		}
+    	
+    	
+    	return true;
+    	
     }
 
     private void handleGestureTwoTap()
