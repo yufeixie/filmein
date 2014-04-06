@@ -15,7 +15,7 @@ exports.getFilm = function (req, res) {
 			if (result) {
 				res.json(result);
 			} else {
-				res.send(401);
+				res.send(401, {});
 			}
 		}
 	});
