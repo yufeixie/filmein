@@ -12,7 +12,11 @@ exports.getFilm = function (req, res) {
 			res.send(401);
 			return;
 		} else {
-			res.json(result);
+			if (result) {
+				res.json(result);
+			} else {
+				res.send(401);
+			}
 		}
 	});
 };

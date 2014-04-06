@@ -31,6 +31,8 @@ public class FilMeInActivity extends Activity
         public void onServiceDisconnected(ComponentName className) {
             Log.d("filmein", "onServiceDisconnected() called.");
             subtitleCardService = null;
+            finish();
+            
         }
     };
     private void doBindService()
@@ -145,6 +147,10 @@ public class FilMeInActivity extends Activity
     private void handleGestureTwoTap()
     {
         Log.d("filmein", "handleGestureTwoTap() called.");
+        doUnbindService();
+        subtitleCardService.onServiceStop();
+        subtitleCardService = null;
+        finish();
     }
 
 

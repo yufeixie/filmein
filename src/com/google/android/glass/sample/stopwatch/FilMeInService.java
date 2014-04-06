@@ -50,7 +50,7 @@ import com.google.android.glass.touchpad.GestureDetector.BaseListener;
 /**
  * Service owning the LiveCard living in the timeline.
  */
-public class FilMeInService extends Service implements AsyncResponse, BaseListener {
+public class FilMeInService extends Service implements AsyncResponse {
 
     private static final String TAG = "StopwatchService";
     private static final String LIVE_CARD_TAG = "stopwatch";
@@ -72,12 +72,15 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     private TimerTask nextTask; 
     private long taskStartTime;
     private long delay;
+    private String currentText;
+    
     
     public class LocalBinder extends Binder {
         public FilMeInService getService() {
             return FilMeInService.this;
         }
     }
+    
     private final IBinder mBinder = new LocalBinder();
     @Override
     public void onCreate() {
@@ -95,35 +98,10 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     	 ArrayList<String> voiceResults = intent.getExtras().getStringArrayList(RecognizerIntent.EXTRA_RESULTS);
     	 publishCard(this);
          Log.d("speech + n", voiceResults.toString());
-//         gc = new GestureDetector(this);
-//         
-//         gc.setBaseListener( new GestureDetector.BaseListener() {
-//        	@Override
-//        	public boolean onGesture(Gesture gesture) {
-//        		Log.i("gest", "ure2");
-//        		handleGesture(gesture);
-//				return true;
-//        	}
-//         });
+
          new ASyncGetData(this).execute(voiceResults.toArray(new String[voiceResults.size()]));
-//         try {
-//			//jsonObj = new JSONObject("{name:\"Test Movie\",subtitles:[{count:1,start:4000,endTime:6000,text:\"This is an example of a subtitle\"},{count:2,start:8000,endTime:12000,text:\"your momma!\"}, {count:3,start:15000,endTime:17000,text:\"What did you say you bastard?\"},{count:4,start:18000,endTime:19000,text:\"I said your momma!\"}]}");
-//		} catch (JSONException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//         try {
-//			Log.d("jsonobj", jsonObj.getString("name"));
-//		} catch (JSONException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
         
         return START_STICKY;
-    }
-    
-    private void handleGesture(Gesture g){
-    	Log.d("filmein","test");
     }
     
     //Result of ASyncTask, this is called when it's finished
@@ -135,9 +113,11 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     		Log.d("filmein", "errrrrrr");
     	}
 		jsonObj = output;
-		publishCard(this);
+		//publishCard(this);
 		//pausedCard(this);
-		onServiceStart();
+		if (jsonObj != null) {
+			onServiceStart();
+		}
 	}
     
     private class ASyncGetData extends AsyncTask<String, AsyncResponse, JSONObject> {
@@ -187,7 +167,7 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
 					JSONObject jsonObj = new JSONObject(response.toString());
 					return jsonObj;
 				} else {
-					return null;
+					updateCardText("No subtitles currently exist for:\r\n" + movie);
 				}
 		 
 			} catch (Exception e) {
@@ -207,11 +187,9 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
 
     @Override
     public void onDestroy() {
+    	Log.d("filmein", "destroying service");
         if (liveCard != null && liveCard.isPublished()) {
             Log.d("filmein", "Unpublishing LiveCard");
-//            if (mCallback != null) {
-//                liveCard.getSurfaceHolder().removeCallback(mCallback);
-//            }
             liveCard.unpublish();
             liveCard = null;
         }
@@ -248,7 +226,7 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
         return true;
     }
 
-    private boolean onServiceStop()
+    public boolean onServiceStop()
     {
         Log.d("filmein", "onServiceStop() called.");
 
@@ -265,6 +243,7 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
             heartBeat.cancel();
         }
         // ...
+        stopSelf();
 
         return true;
     }
@@ -344,12 +323,8 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
         	} catch(Exception e) {
         		Log.e("err", e.toString());
         	}
-            RemoteViews remoteViews = new RemoteViews(context.getPackageName(), R.layout.card_chronometer);
-            
-            // ...
-
-            remoteViews.setTextViewText(R.id.subtitle_target, content);
-            liveCard.setViews(remoteViews);
+        	updateCardText(content);
+            currentText = content;
         }
     }
 
@@ -439,15 +414,7 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     	i++;
 	}
 
-	@Override
-	public boolean onGesture(Gesture arg0) {
-		Log.i("filmein","ure");
-//		if(arg0.equals(Gesture.TAP)) {
-//			//Log.d("tap", "something");
-//			onServiceStart();
-//		}
-		return true;
-	}
+
 
 	public void pause() {
 		// TODO Auto-generated method stub
@@ -456,15 +423,25 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
 				Log.d("filmein", "resuming: " + Long.toString(delay));
 				heartBeat.schedule(getNextTimerTask(), delay);
 				taskStartTime = System.currentTimeMillis();
+				updateCardText(currentText);
 			} else {
 				long currentTime = System.currentTimeMillis();
 				long establishedTime = currentTime - taskStartTime;
 				delay -= establishedTime;
 				Log.d("filmein", "pausing: " + Long.toString(delay));
 				heartBeat.cancel();
+				updateCardText("[PAUSED]\r\n" + currentText);
 			}
-			paused = !paused;
-		
 			
+			
+			paused = !paused;			
 	}
+
+	private void updateCardText(String text) {
+		RemoteViews remoteViews = new RemoteViews(this.getPackageName(), R.layout.card_chronometer);
+		remoteViews.setTextViewText(R.id.subtitle_target, text);
+		liveCard.setViews(remoteViews);
+	}
+	
+
 }
