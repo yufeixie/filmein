@@ -100,18 +100,22 @@ public class FilMeInActivity extends Activity
     public boolean onGenericMotionEvent(MotionEvent event)
     {
         if (mGestureDetector != null) {
+        	Log.d("gest", "motion not null");
             return mGestureDetector.onMotionEvent(event);
         }
+        Log.d("gest", "motion NULL");
         return false;
     }
 
     private GestureDetector createGestureDetector(Context context)
     {
         GestureDetector gestureDetector = new GestureDetector(context);
-        //Create a base listener for generic gestures
+        //Create a base listener for generic gesture
+        Log.d("gest", "In create function");
         gestureDetector.setBaseListener( new GestureDetector.BaseListener() {
             @Override
             public boolean onGesture(Gesture gesture) {
+            	Log.d("gest", "ure3");
                 if (gesture == Gesture.TAP) {
                     handleGestureTap();
                     return true;
@@ -122,6 +126,7 @@ public class FilMeInActivity extends Activity
                 return false;
             }
         });
+        Log.d("gest", "end of create function");
         return gestureDetector;
     }
 

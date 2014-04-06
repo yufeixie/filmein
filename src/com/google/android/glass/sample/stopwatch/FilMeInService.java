@@ -55,12 +55,12 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     private static final String TAG = "StopwatchService";
     private static final String LIVE_CARD_TAG = "stopwatch";
 
-    private ChronometerDrawer mCallback;
+    //private ChronometerDrawer mCallback;
 
     private TimelineManager mTimelineManager;
     private LiveCard liveCard;
     
-    private GestureDetector gc;
+    //private GestureDetector gc;
 
     private Timer heartBeat = null;
     private int i = 0;
@@ -92,15 +92,16 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     	 ArrayList<String> voiceResults = intent.getExtras().getStringArrayList(RecognizerIntent.EXTRA_RESULTS);
     	 publishCard(this);
          Log.d("speech + n", voiceResults.toString());
-         gc = new GestureDetector(this);
-         
-         gc.setBaseListener( new GestureDetector.BaseListener() {
-        	@Override
-        	public boolean onGesture(Gesture gesture) {
-        		handleGesture(gesture);
-				return true;
-        	}
-         });
+//         gc = new GestureDetector(this);
+//         
+//         gc.setBaseListener( new GestureDetector.BaseListener() {
+//        	@Override
+//        	public boolean onGesture(Gesture gesture) {
+//        		Log.i("gest", "ure2");
+//        		handleGesture(gesture);
+//				return true;
+//        	}
+//         });
          new ASyncGetData(this).execute(voiceResults.toArray(new String[voiceResults.size()]));
 //         try {
 //			//jsonObj = new JSONObject("{name:\"Test Movie\",subtitles:[{count:1,start:4000,endTime:6000,text:\"This is an example of a subtitle\"},{count:2,start:8000,endTime:12000,text:\"your momma!\"}, {count:3,start:15000,endTime:17000,text:\"What did you say you bastard?\"},{count:4,start:18000,endTime:19000,text:\"I said your momma!\"}]}");
@@ -205,9 +206,9 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     public void onDestroy() {
         if (liveCard != null && liveCard.isPublished()) {
             Log.d(TAG, "Unpublishing LiveCard");
-            if (mCallback != null) {
-                liveCard.getSurfaceHolder().removeCallback(mCallback);
-            }
+//            if (mCallback != null) {
+//                liveCard.getSurfaceHolder().removeCallback(mCallback);
+//            }
             liveCard.unpublish();
             liveCard = null;
         }
@@ -423,11 +424,11 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
 
 	@Override
 	public boolean onGesture(Gesture arg0) {
-		Log.d("gest","ure");
-		if(arg0.equals(Gesture.TAP)) {
-			//Log.d("tap", "something");
-			onServiceStart();
-		}
+		Log.i("gest","ure");
+//		if(arg0.equals(Gesture.TAP)) {
+//			//Log.d("tap", "something");
+//			onServiceStart();
+//		}
 		return true;
 	}
 }
