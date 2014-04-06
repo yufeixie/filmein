@@ -64,10 +64,14 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
 
     private Timer heartBeat = null;
     private int i = 0;
-    
+    private boolean paused = false;
     private JSONObject jsonObj;
     private boolean isBlank = true;
     private long previousEnd = -1;
+    final Handler handler = new Handler();
+    private TimerTask nextTask; 
+    private long taskStartTime;
+    private long delay;
     
     public class LocalBinder extends Binder {
         public FilMeInService getService() {
@@ -75,7 +79,6 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
         }
     }
     private final IBinder mBinder = new LocalBinder();
-    
     @Override
     public void onCreate() {
         super.onCreate();
@@ -84,7 +87,7 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return mBinder;
     }
 
     @Override
@@ -120,7 +123,7 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     }
     
     private void handleGesture(Gesture g){
-    	Log.d("gesture","test");
+    	Log.d("filmein","test");
     }
     
     //Result of ASyncTask, this is called when it's finished
@@ -129,7 +132,7 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
 		// TODO Auto-generated method stub
     	if(output == null)
     	{
-    		Log.d("iii", "errrrrrr");
+    		Log.d("filmein", "errrrrrr");
     	}
 		jsonObj = output;
 		publishCard(this);
@@ -180,7 +183,7 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
 					in.close();
 			 
 					//print result
-					Log.d("movie", response.toString());
+					Log.d("filmein", response.toString());
 					JSONObject jsonObj = new JSONObject(response.toString());
 					return jsonObj;
 				} else {
@@ -205,7 +208,7 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     @Override
     public void onDestroy() {
         if (liveCard != null && liveCard.isPublished()) {
-            Log.d(TAG, "Unpublishing LiveCard");
+            Log.d("filmein", "Unpublishing LiveCard");
 //            if (mCallback != null) {
 //                liveCard.getSurfaceHolder().removeCallback(mCallback);
 //            }
@@ -220,8 +223,10 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     
     private boolean onServiceStart()
     {
-        Log.d("onServiceStart() called.", "onServiceStart() called.");
-        
+        Log.d("filmein", "onServiceStart() called.");
+        Intent gestureIntent = new Intent(getBaseContext(), FilMeInActivity.class);
+        gestureIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getApplication().startActivity(gestureIntent);
         if(heartBeat == null) {
             heartBeat = new Timer();
         }
@@ -234,18 +239,18 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
 
     private boolean onServicePause()
     {
-        Log.d("onServicePause() called.", "onServicePause() called.");
+        Log.d("filmein", "onServicePause() called.");
         return true;
     }
     private boolean onServiceResume()
     {
-        Log.d("onServiceResume() called.", "onServiceResume() called.");
+        Log.d("filmein", "onServiceResume() called.");
         return true;
     }
 
     private boolean onServiceStop()
     {
-        Log.d("onServiceStop() called.", "onServiceStop() called.");
+        Log.d("filmein", "onServiceStop() called.");
 
         // TBD:
         // Unpublish livecard here
@@ -300,7 +305,7 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
     // This will be called by the "HeartBeat".
     private void updateCard(Context context)
     {
-        Log.d("updateCard() called.", "updateCard() called.");
+        Log.d("filmein", "updateCard() called.");
         // if (liveCard == null || !liveCard.isPublished()) {
         if (liveCard == null) {
         	//Log.d("publish card when livecard is null", "publish card when livecard is null");
@@ -350,20 +355,18 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
 
     private void unpublishCard(Context context)
     {
-        Log.d("unpublishCard() called.", "unpublishCard() called.");
+        Log.d("filmein", "unpublishCard() called.");
         if (liveCard != null) {
             liveCard.unpublish();
             liveCard = null;
         }
     }
 
-
-    private void setHeartBeat()
-    {
-        final Handler handler = new Handler();
-        TimerTask liveCardUpdateTask = new TimerTask() {
+    private TimerTask getNextTimerTask() {
+    	nextTask = new TimerTask() {
             @Override
             public void run() {
+            	
                 handler.post(new Runnable() {
                     public void run() {
                         try {
@@ -373,14 +376,20 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
                             updateCard(FilMeInService.this);
                             
                         } catch (Exception e) {
-                            Log.e("Failed to run the task.", "Failed to run the task." + e);
+                            Log.e("filmein", "Failed to run the task." + e);
                         }
                     }
 
-					
+    				
                 });
             }
         };
+        return nextTask;
+    }
+
+    private void setHeartBeat()
+    {
+        
 
         try {
         	JSONArray subtitles = jsonObj.getJSONArray(("subtitles"));
@@ -394,41 +403,68 @@ public class FilMeInService extends Service implements AsyncResponse, BaseListen
             if(!isBlank)
             {
             	if(start - previousEnd < 10) {
-            		heartBeat.schedule(liveCardUpdateTask, endTime - start);
+            		delay = endTime - start;
+
+            		heartBeat.schedule(getNextTimerTask(), delay);
+            		taskStartTime = System.currentTimeMillis();
             		previousEnd = endTime;
             	}
             	else {
             		isBlank = true;
                 	//Log.d("not blank", "" + (start - previousEnd));
-                	heartBeat.schedule(liveCardUpdateTask, start - previousEnd);
+            		delay = start - previousEnd;
+                	heartBeat.schedule(getNextTimerTask(), delay);
+                	taskStartTime = System.currentTimeMillis();
+                	
                 	previousEnd = endTime;
             	}
             }
             else {
             	//Log.d("isBlank","" + (endTime - start));
-            	heartBeat.schedule(liveCardUpdateTask, endTime - start);
+            	delay = endTime - start;
+            	heartBeat.schedule(getNextTimerTask(), endTime - start);
+            	taskStartTime = System.currentTimeMillis();
             	previousEnd = endTime;
             	isBlank = false;
             }
         } catch (Exception e)
         {
-        	Log.e("error", e.toString());
+        	Log.e("filmein", e.toString());
         }
         
     }
 
     private void updateText() {
-    	Log.d("d", "" + i);
+    	Log.d("filmein", "" + i);
     	i++;
 	}
 
 	@Override
 	public boolean onGesture(Gesture arg0) {
-		Log.i("gest","ure");
+		Log.i("filmein","ure");
 //		if(arg0.equals(Gesture.TAP)) {
 //			//Log.d("tap", "something");
 //			onServiceStart();
 //		}
 		return true;
+	}
+
+	public void pause() {
+		// TODO Auto-generated method stub
+			if (paused) {
+				heartBeat = new Timer();
+				Log.d("filmein", "resuming: " + Long.toString(delay));
+				heartBeat.schedule(getNextTimerTask(), delay);
+				taskStartTime = System.currentTimeMillis();
+			} else {
+				long currentTime = System.currentTimeMillis();
+				long establishedTime = currentTime - taskStartTime;
+				delay -= establishedTime;
+				Log.d("filmein", "pausing: " + Long.toString(delay));
+				heartBeat.cancel();
+			}
+			paused = !paused;
+		
+			
 	}
 }

@@ -25,11 +25,11 @@ public class FilMeInActivity extends Activity
     private FilMeInService subtitleCardService;
     private ServiceConnection serviceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
-            Log.d("onServiceConnected() called.", "onServiceConnected() called.");
+            Log.d("filmein", "onServiceConnected() called.");
             subtitleCardService = ((FilMeInService.LocalBinder)service).getService();
         }
         public void onServiceDisconnected(ComponentName className) {
-            Log.d("onServiceDisconnected() called.", "onServiceDisconnected() called.");
+            Log.d("filmein", "onServiceDisconnected() called.");
             subtitleCardService = null;
         }
     };
@@ -59,22 +59,23 @@ public class FilMeInActivity extends Activity
     {
         doUnbindService();
         // doStopService();   // TBD: When do we call Stop service???
-        super.onDestroy();
+        super.onDestroy();  
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
-        super.onCreate(savedInstanceState);
-        Log.d("onCreate() called.", "onCreate() called.");
+    	super.onCreate(savedInstanceState);
+        Log.d("filmein", "onCreate() called.");
 
-        setContentView(R.layout.card_chronometer);
+        //setContentView(R.layout.card_chronometer);
 
         // For gesture handling.
         mGestureDetector = createGestureDetector(this);
+        
 
         // bind does not work. We need to call start() explilicitly...
-        // doBindService();
+        doBindService();
         //doStartService();
         // TBD: We need to call doStopService() when user "closes" the app....
         // ...
@@ -86,7 +87,7 @@ public class FilMeInActivity extends Activity
     protected void onResume()
     {
         super.onResume();
-        Log.d("onResume() called.", "onResume() called.");
+        Log.d("filmein", "onResume() called.");
 
     }
 
@@ -100,10 +101,10 @@ public class FilMeInActivity extends Activity
     public boolean onGenericMotionEvent(MotionEvent event)
     {
         if (mGestureDetector != null) {
-        	Log.d("gest", "motion not null");
+        	Log.d("filmein", "motion not null");
             return mGestureDetector.onMotionEvent(event);
         }
-        Log.d("gest", "motion NULL");
+        Log.d("filmein", "motion NULL");
         return false;
     }
 
@@ -111,11 +112,11 @@ public class FilMeInActivity extends Activity
     {
         GestureDetector gestureDetector = new GestureDetector(context);
         //Create a base listener for generic gesture
-        Log.d("gest", "In create function");
+        Log.d("filmein", "In create function");
         gestureDetector.setBaseListener( new GestureDetector.BaseListener() {
             @Override
             public boolean onGesture(Gesture gesture) {
-            	Log.d("gest", "ure3");
+            	Log.d("filmein", "ure3");
                 if (gesture == Gesture.TAP) {
                     handleGestureTap();
                     return true;
@@ -126,20 +127,24 @@ public class FilMeInActivity extends Activity
                 return false;
             }
         });
-        Log.d("gest", "end of create function");
+        Log.d("filmein", "end of create function");
         return gestureDetector;
     }
 
     private void handleGestureTap()
     {
-        Log.d("handleGestureTap() called.", "handleGestureTap() called.");
-        doStartService();
-        finish();
+        Log.d("filmein", "handleGestureTap() called.");
+        if (subtitleCardService != null) {
+        	Log.d("filmein", "before pause");
+        	subtitleCardService.pause();
+        }
+        //doStartService();
+        //finish(); 
     }
 
     private void handleGestureTwoTap()
     {
-        Log.d("handleGestureTwoTap() called.", "handleGestureTwoTap() called.");
+        Log.d("filmein", "handleGestureTwoTap() called.");
     }
 
 
