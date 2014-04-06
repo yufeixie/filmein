@@ -144,9 +144,8 @@ public class FilMeInActivity extends Activity
         Log.d("filmein", "handleGestureTap() called.");
         if (subtitleCardService != null) {
         	Log.d("filmein", "before pause");
-        	if (subtitleCardService.pause()) {
-        		finish();
-        	}
+        	subtitleCardService.pause();
+
         }
         //doStartService();
         //finish(); 
