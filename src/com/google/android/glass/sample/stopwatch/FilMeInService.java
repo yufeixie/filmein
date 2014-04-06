@@ -17,6 +17,7 @@
 package com.google.android.glass.sample.stopwatch;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -115,6 +116,9 @@ public class FilMeInService extends Service implements AsyncResponse {
 		jsonObj = output;
 		//publishCard(this);
 		//pausedCard(this);
+		Intent gestureIntent = new Intent(getBaseContext(), FilMeInActivity.class);
+        gestureIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getApplication().startActivity(gestureIntent);
 		if (jsonObj != null) {
 			onServiceStart();
 		}
@@ -145,28 +149,27 @@ public class FilMeInService extends Service implements AsyncResponse {
 				con.setRequestMethod("GET");
 		 
 				//add request header
-		 
-				int responseCode = con.getResponseCode();
-				System.out.println("\nSending 'GET' request to URL : " + url);
-				System.out.println("Response Code : " + responseCode);
 				
-				if (responseCode == 200) {
-		 
-					BufferedReader in = new BufferedReader(
-					        new InputStreamReader(con.getInputStream()));
-					String inputLine;
-					StringBuffer response = new StringBuffer();
-			 
-					while ((inputLine = in.readLine()) != null) {
-						response.append(inputLine);
+				try {
+					int responseCode = con.getResponseCode();
+					if (responseCode == 200) {
+						 
+						BufferedReader in = new BufferedReader(
+						        new InputStreamReader(con.getInputStream()));
+						String inputLine;
+						StringBuffer response = new StringBuffer();
+				 
+						while ((inputLine = in.readLine()) != null) {
+							response.append(inputLine);
+						}
+						in.close();
+				 
+						//print result
+						Log.d("filmein", response.toString());
+						JSONObject jsonObj = new JSONObject(response.toString());
+						return jsonObj;
 					}
-					in.close();
-			 
-					//print result
-					Log.d("filmein", response.toString());
-					JSONObject jsonObj = new JSONObject(response.toString());
-					return jsonObj;
-				} else {
+				} catch (IOException e) {
 					updateCardText("No subtitles currently exist for:\r\n" + movie);
 				}
 		 
@@ -202,9 +205,7 @@ public class FilMeInService extends Service implements AsyncResponse {
     private boolean onServiceStart()
     {
         Log.d("filmein", "onServiceStart() called.");
-        Intent gestureIntent = new Intent(getBaseContext(), FilMeInActivity.class);
-        gestureIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        getApplication().startActivity(gestureIntent);
+        
         if(heartBeat == null) {
             heartBeat = new Timer();
         }
@@ -416,8 +417,9 @@ public class FilMeInService extends Service implements AsyncResponse {
 
 
 
-	public void pause() {
+	public boolean pause() {
 		// TODO Auto-generated method stub
+		if (heartBeat != null){
 			if (paused) {
 				heartBeat = new Timer();
 				Log.d("filmein", "resuming: " + Long.toString(delay));
@@ -432,9 +434,10 @@ public class FilMeInService extends Service implements AsyncResponse {
 				heartBeat.cancel();
 				updateCardText("[PAUSED]\r\n" + currentText);
 			}
-			
-			
-			paused = !paused;			
+			paused = !paused;
+			return paused;
+		}
+		return false;
 	}
 
 	private void updateCardText(String text) {

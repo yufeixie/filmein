@@ -104,7 +104,13 @@ public class FilMeInActivity extends Activity
     {
         if (mGestureDetector != null) {
         	Log.d("filmein", "motion not null");
-            return mGestureDetector.onMotionEvent(event);
+            if (!mGestureDetector.onMotionEvent(event)) {
+            	Log.d("filmein", "different gesture");
+            	return super.onGenericMotionEvent(event);
+            }
+            Log.d("filmein", "valid gesture");
+            return true;
+
         }
         Log.d("filmein", "motion NULL");
         return false;
@@ -125,7 +131,7 @@ public class FilMeInActivity extends Activity
                 } else if (gesture == Gesture.TWO_TAP) {
                     handleGestureTwoTap();
                     return true;
-                }
+                } 
                 return false;
             }
         });
@@ -138,7 +144,9 @@ public class FilMeInActivity extends Activity
         Log.d("filmein", "handleGestureTap() called.");
         if (subtitleCardService != null) {
         	Log.d("filmein", "before pause");
-        	subtitleCardService.pause();
+        	if (subtitleCardService.pause()) {
+        		finish();
+        	}
         }
         //doStartService();
         //finish(); 
